@@ -1,84 +1,29 @@
-'use client'
+import { ConnectDB } from "@/lib/config/db";
+import BlogModel from "@/lib/models/BlogModel";
+import { NextResponse } from "next/server";
 
-import Blogtableitem from '@/components/AdminComponents/Blogtableitem'
-import axios from 'axios'
-import React, { useEffect, useState } from 'react'
+// Connect to DB once
+await ConnectDB();
 
-const page = () => {
-  const [blogs,setBlogs] = useState([])
-
-
-  const fetchBlog = async () => {
-    const res = await axios.get('/api/blog')
-    setBlogs(res.data.blogs)
-    
+export async function GET() {
+  try {
+    const blogs = await BlogModel.find().sort({ createdAt: -1 });
+    return NextResponse.json({ success: true, blogs });
+  } catch (error) {
+    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
   }
-
-  const deleteBlog = async(mongoId) => {
-    const res = await axios.delete('/api/blog',{
-      params:{
-        id:mongoId
-      }
-    })
-    fetchBlog()
-
-  }
-
-
-
-
-
-
-
-  useEffect(() => {
-
-    fetchBlog();
-
-  },[])
-  return (
-    <div className='flex-1 pt-5  px-5 sm:pl-16'>
-      <h1>All blogs</h1>
-      <div className="relative h-[80vh] max-w-[850px] overflow-x-auto mt-4 border border-gray-400 scrollbar-hide">
-        <table  className='w-full  text-sm text-gray-500'>
-          <thead className='text-xs text-bg-gray-700 text-left uppercase'>
-            
-            <tr>
-              <th scope='col' className='hidden sm:block px-6 py-3'>
-                Author name
-              </th>
-              <th scope='col' className='  px-6 py-3'>
-               Blog title
-              </th>
-              <th scope='col' className=' px-6 py-3'>
-                Blog Date
-              </th>
-              <th scope='col' className=' px-6 py-3'>
-               Action 
-              </th>
-            </tr>
-
-
-
-
-
-          </thead>
-          <tbody>
-          {blogs.map((item,index) => {
-              <Blogtableitem key={index} mongoId= {item._id} title={item.title} author={item.author} authorImg={item.authorImg} date={item.date} deleteBlog ={deleteBlog}/>
-
-            })}
-            
-
-            {/* <Blogtableitem/> */}
-
-
-            
-          </tbody>
-        </table>
-      </div>
-      
-    </div>
-  )
 }
 
-export default page
+export async function DELETE(req) {
+  try {
+    const id = new URL(req.url).searchParams.get("id");
+    if (!id) {
+      return NextResponse.json({ success: false, message: "Blog ID required" }, { status: 400 });
+    }
+
+    await BlogModel.findByIdAndDelete(id);
+    return NextResponse.json({ success: true, message: "Blog deleted" });
+  } catch (error) {
+    return NextResponse.json({ success: false, message: error.message }, { status: 500 });
+  }
+}
