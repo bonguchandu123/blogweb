@@ -21,5 +21,6 @@ const Substableitem = ({email,mongoId,date}) => {
     </tr>
   )
 }
+}
 
 export default Substableitem
